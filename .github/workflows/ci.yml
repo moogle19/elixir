@@ -53,6 +53,46 @@ jobs:
       - name: Check reproducible builds
         run: taskset 1 make check_reproducible
         if: matrix.otp_release == 'OTP-24.0'
+        
+  test_macos:
+    name: macOS, OTP-${{ matrix.otp_release }}, macOS 11
+    strategy:
+      fail-fast: false
+      matrix:
+        otp_release: ['24', '23']
+        development: [false]
+    runs-on: macos-11
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 50
+      - name: Install Erlang/OTP
+        run: brew install erlang
+        if: matrix.otp_release == '24'
+      - name: Install Erlang/OTP < 24
+        run: |
+          brew install erlang@${{ matrix.otp_release }}
+          brew link --overwrite erlang@${{ matrix.otp_release }}
+        if: matrix.otp_release != '24'
+      - name: Compile Elixir
+        run: |
+          rm -rf .git
+          make compile
+      - name: Build info
+        run: bin/elixir --version
+      - name: Check format
+        run: make test_formatted && echo "All Elixir source code files are properly formatted."
+      - name: Run Dialyzer
+        run: dialyzer -pa lib/elixir/ebin --build_plt --output_plt elixir.plt --apps lib/elixir/ebin/elixir.beam lib/elixir/ebin/Elixir.Kernel.beam
+      - name: Erlang test suite
+        run: make test_erlang
+        continue-on-error: ${{ matrix.development }}
+      - name: Elixir test suite
+        run: make test_elixir
+        continue-on-error: ${{ matrix.development }}
+      - name: Check reproducible builds
+        run: taskset 1 make check_reproducible
+        if: matrix.otp_release == '24'
 
   test_windows:
     name: Windows, OTP-${{ matrix.otp_release }}, Windows Server 2019
