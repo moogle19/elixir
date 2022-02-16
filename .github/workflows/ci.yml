@@ -90,9 +90,6 @@ jobs:
       - name: Elixir test suite
         run: make test_elixir
         continue-on-error: ${{ matrix.development }}
-      - name: Check reproducible builds
-        run: taskset 1 make check_reproducible
-        if: matrix.otp_release == '24'
 
   test_windows:
     name: Windows, OTP-${{ matrix.otp_release }}, Windows Server 2019
