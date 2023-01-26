@@ -269,7 +269,15 @@ defmodule IEx.Autocomplete do
   end
 
   defp match_local(hint, exact?, shell) do
-    imports = imports_from_env(shell) |> Enum.flat_map(&elem(&1, 1))
+    imports =
+      imports_from_env(shell)
+      |> Enum.reduce([], fn {mod, funs}, acc ->
+        mod
+        |> get_module_funs()
+        |> Enum.filter(&Enum.member?(funs, &1))
+        |> Kernel.++(acc)
+      end)
+
     module_funs = get_module_funs(Kernel.SpecialForms)
     match_module_funs(imports ++ module_funs, hint, exact?)
   end
